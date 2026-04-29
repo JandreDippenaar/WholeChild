@@ -33,12 +33,13 @@ import { useAssessments, useLearners } from "@/lib/queries";
 import { useAuth } from "@/lib/auth";
 
 const ALL = "__all__";
+// Aitsa! brand palette — keep in sync with --brand-* tokens in src/index.css.
 const COLORS = [
-  "hsl(173 80% 32%)",
-  "hsl(173 70% 50%)",
-  "hsl(40 90% 55%)",
-  "hsl(220 70% 55%)",
-  "hsl(330 70% 55%)",
+  "hsl(var(--brand-orchid))",
+  "hsl(var(--brand-blue))",
+  "hsl(var(--brand-yellow))",
+  "hsl(var(--brand-green))",
+  "hsl(var(--brand-fuchsia))",
 ];
 
 export default function Dashboard() {
@@ -228,7 +229,7 @@ export default function Dashboard() {
                 />
                 <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} />
                 <Tooltip />
-                <Bar dataKey="average" fill="hsl(40 90% 55%)" radius={6} />
+                <Bar dataKey="average" fill="hsl(var(--brand-yellow))" radius={6} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>

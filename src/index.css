@@ -2,6 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Theme: Aitsa! brand palette
+ * Velvet Orchid #7A298E hsl(288 55% 36%)  primary
+ * School Bus Yellow #FEC40D hsl(46 99% 52%)  chart accent
+ * Yellow Green #BBCD61 hsl(70 52% 59%)  chart / "active" badge
+ * Blue Bell #0398CC hsl(196 97% 41%)  chart accent
+ * Fuchsia Flame #E9028A hsl(325 98% 46%)  chart accent
+ */
+
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -13,56 +22,70 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
 
-    --primary: 173 80% 32%;
+    --primary: 288 55% 36%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 11%;
+    --secondary: 288 25% 96%;
+    --secondary-foreground: 288 55% 22%;
 
     --muted: 210 40% 96%;
     --muted-foreground: 215 16% 47%;
 
-    --accent: 173 70% 94%;
-    --accent-foreground: 173 80% 22%;
+    --accent: 288 60% 95%;
+    --accent-foreground: 288 60% 24%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 214 32% 91%;
     --input: 214 32% 91%;
-    --ring: 173 80% 32%;
+    --ring: 288 55% 36%;
 
     --radius: 0.625rem;
+
+    /* Brand palette tokens (raw HSL) — used by charts in src/pages/Dashboard.tsx
+       and src/pages/LearnerDetail.tsx. Keep in sync with the palette comment above. */
+    --brand-orchid: 288 55% 36%;
+    --brand-yellow: 46 99% 52%;
+    --brand-green: 70 52% 59%;
+    --brand-blue: 196 97% 41%;
+    --brand-fuchsia: 325 98% 46%;
   }
 
   .dark {
-    --background: 222 47% 7%;
+    --background: 288 30% 8%;
     --foreground: 210 40% 98%;
 
-    --card: 222 47% 9%;
+    --card: 288 25% 11%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 222 47% 9%;
+    --popover: 288 25% 11%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 173 70% 45%;
-    --primary-foreground: 222 47% 7%;
+    --primary: 288 70% 70%;
+    --primary-foreground: 288 30% 10%;
 
-    --secondary: 217 33% 18%;
+    --secondary: 288 20% 18%;
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 217 33% 18%;
+    --muted: 288 15% 18%;
     --muted-foreground: 215 20% 65%;
 
-    --accent: 173 50% 18%;
-    --accent-foreground: 173 80% 80%;
+    --accent: 288 30% 22%;
+    --accent-foreground: 288 80% 88%;
 
     --destructive: 0 70% 45%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 217 33% 22%;
-    --input: 217 33% 22%;
-    --ring: 173 70% 45%;
+    --border: 288 15% 22%;
+    --input: 288 15% 22%;
+    --ring: 288 70% 70%;
+
+    --brand-orchid: 288 70% 70%;
+    --brand-yellow: 46 99% 60%;
+    --brand-green: 70 52% 65%;
+    --brand-blue: 196 90% 55%;
+    --brand-fuchsia: 325 90% 60%;
   }
 
   * {
