@@ -53,20 +53,63 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
-    supabase.auth.getSession().then(async ({ data }) => {
-      if (!mounted) return;
-      setSession(data.session);
-      if (data.session?.user) await loadProfile(data.session.user.id);
-      setLoading(false);
-    });
+    let safetyTimer: ReturnType<typeof setTimeout> | null = null;
+
+    // Fail-safe: never let the splash hang. If auth init takes >3s,
+    // assume "no session" and let the app render the login page.
+    safetyTimer = setTimeout(() => {
+      if (mounted) {
+        // eslint-disable-next-line no-console
+        console.warn("[auth] init timed out after 3s — proceeding without session");
+        setLoading(false);
+      }
+    }, 3000);
+
+    (async () => {
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (error) {
+          // eslint-disable-next-line no-console
+          console.error("[auth] getSession failed", error);
+        }
+        if (!mounted) return;
+        setSession(data?.session ?? null);
+        if (data?.session?.user) {
+          try {
+            await loadProfile(data.session.user.id);
+          } catch (err) {
+            // eslint-disable-next-line no-console
+            console.error("[auth] loadProfile failed", err);
+          }
+        }
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error("[auth] init error", err);
+      } finally {
+        if (mounted) {
+          if (safetyTimer) clearTimeout(safetyTimer);
+          setLoading(false);
+        }
+      }
+    })();
 
     const { data: sub } = supabase.auth.onAuthStateChange(async (_evt, s) => {
       setSession(s);
-      if (s?.user) await loadProfile(s.user.id);
-      else setProfile(null);
+      if (s?.user) {
+        try {
+          await loadProfile(s.user.id);
+        } catch (err) {
+          // eslint-disable-next-line no-console
+          console.error("[auth] loadProfile (onAuthStateChange) failed", err);
+        }
+      } else {
+        setProfile(null);
+      }
     });
+
     return () => {
       mounted = false;
+      if (safetyTimer) clearTimeout(safetyTimer);
       sub.subscription.unsubscribe();
     };
   }, []);
