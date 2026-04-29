@@ -1,0 +1,15 @@
+-- WholeChild · promote first user to admin
+--
+-- After you've signed up your own account in the app, run ONE of the queries
+-- below in the Supabase SQL editor to grant yourself admin access. Without an
+-- admin, no one can create learners (RLS will block all inserts).
+--
+-- By email:
+-- update public.profiles
+--   set role = 'admin'
+--   where email = 'YOUR_EMAIL_HERE@example.com';
+--
+-- By user id (find it under Authentication → Users):
+-- update public.profiles
+--   set role = 'admin'
+--   where id = '00000000-0000-0000-0000-000000000000';
