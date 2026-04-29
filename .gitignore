@@ -24,6 +24,7 @@ pnpm-debug.log*
 *.sln
 *.sw?
 
-# Stray data dumps that don't belong in the repo
+# Stray data dumps and generated SQL with PII — never commit
 *.csv
+scripts/import_learners.sql
 
