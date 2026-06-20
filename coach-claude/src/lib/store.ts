@@ -7,6 +7,7 @@ import type { Activity, ChatMessage, FilterState } from "../types";
 import type { UnitSystem } from "./format";
 import { parseFiles } from "./parsers";
 import { INSIGHTS_PROMPT, buildSystemPrompt, streamCoach } from "./claude";
+import { generateDemoActivities } from "./demoData";
 
 const ACTIVITIES_KEY = "coach-claude:activities";
 const CHAT_KEY = "coach-claude:chat";
@@ -74,6 +75,7 @@ interface AppState {
   runCoach: (text: string) => Promise<void>;
   stopCoach: () => void;
   maybeGenerateInsights: () => void;
+  loadDemo: () => void;
   init: () => Promise<void>;
   importFiles: (files: File[]) => Promise<void>;
   removeActivity: (id: string) => void;
@@ -227,6 +229,30 @@ export const useStore = create<AppState>((set, get) => ({
         },
       });
     }
+  },
+
+  loadDemo: () => {
+    const demo = generateDemoActivities();
+    const existing = get().activities;
+    const key = (a: Activity) =>
+      `${Math.round(a.startTime / 1000)}-${Math.round(a.distanceM)}-${a.sport}`;
+    const seen = new Set(existing.map(key));
+    const additions = demo.filter((a) => {
+      const k = key(a);
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+    const merged = [...existing, ...additions].sort((a, b) => b.startTime - a.startTime);
+    void persistActivities(merged);
+    set({
+      activities: merged,
+      importStatus: {
+        busy: false,
+        message: `Loaded ${additions.length} demo activities`,
+        warnings: [],
+      },
+    });
   },
 
   removeActivity: (id) => {

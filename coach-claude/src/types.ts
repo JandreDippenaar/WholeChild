@@ -1,6 +1,6 @@
 // Core domain model for Coach Claude.
 
-export type SourceFormat = "gpx" | "tcx" | "fit" | "apple" | "samsung" | "csv";
+export type SourceFormat = "gpx" | "tcx" | "fit" | "apple" | "samsung" | "csv" | "demo";
 
 /** A single point in an activity's time series. */
 export interface Sample {
