@@ -50,6 +50,8 @@ interface ImportStatus {
   warnings: string[];
 }
 
+export type HelpTab = "import" | "claude";
+
 interface AppState {
   loaded: boolean;
   activities: Activity[];
@@ -58,7 +60,10 @@ interface AppState {
   settings: Settings;
   chat: ChatMessage[];
   importStatus: ImportStatus;
+  help: HelpTab | null;
 
+  openHelp: (tab: HelpTab) => void;
+  closeHelp: () => void;
   init: () => Promise<void>;
   importFiles: (files: File[]) => Promise<void>;
   removeActivity: (id: string) => void;
@@ -87,6 +92,10 @@ export const useStore = create<AppState>((set, get) => ({
   settings: loadSettings(),
   chat: [],
   importStatus: { busy: false, message: "", warnings: [] },
+  help: null,
+
+  openHelp: (tab) => set({ help: tab }),
+  closeHelp: () => set({ help: null }),
 
   init: async () => {
     const [activities, chat] = await Promise.all([

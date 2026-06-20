@@ -1,9 +1,11 @@
 import { useState } from "react";
-import { ChevronDown, FileDown, Upload, Watch } from "lucide-react";
+import { ChevronDown, FileDown, KeyRound, Watch } from "lucide-react";
 import { ImportButton } from "./ImportButton";
 import { EXPORT_GUIDES } from "./exportGuides";
+import { useStore } from "../lib/store";
 
 export function EmptyState() {
+  const openHelp = useStore((s) => s.openHelp);
   return (
     <div className="mx-auto max-w-3xl">
       <div className="card flex flex-col items-center gap-4 p-10 text-center">
@@ -18,8 +20,13 @@ export function EmptyState() {
             <code>.tcx</code> / <code>.csv</code> exports — all locally, nothing is uploaded.
           </p>
         </div>
-        <div className="w-56">
-          <ImportButton />
+        <div className="flex flex-col items-center gap-2 sm:flex-row">
+          <div className="w-56">
+            <ImportButton />
+          </div>
+          <button onClick={() => openHelp("claude")} className="btn-ghost w-56 sm:w-auto">
+            <KeyRound size={15} /> Connect Claude
+          </button>
         </div>
       </div>
 

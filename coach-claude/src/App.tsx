@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Activity as ActivityIcon,
+  HelpCircle,
   LayoutDashboard,
   ListChecks,
   MessageSquareHeart,
@@ -15,6 +16,7 @@ import { Coach } from "./components/Coach";
 import { Settings } from "./components/Settings";
 import { ImportButton } from "./components/ImportButton";
 import { ActivityDetail } from "./components/ActivityDetail";
+import { HelpModal } from "./components/HelpModal";
 
 type View = "dashboard" | "activities" | "coach" | "settings";
 
@@ -35,6 +37,9 @@ export default function App() {
   const importFiles = useStore((s) => s.importFiles);
   const selectedId = useStore((s) => s.selectedId);
   const select = useStore((s) => s.select);
+  const help = useStore((s) => s.help);
+  const openHelp = useStore((s) => s.openHelp);
+  const closeHelp = useStore((s) => s.closeHelp);
 
   // Global drag & drop for importing anywhere in the app.
   useEffect(() => {
@@ -110,8 +115,15 @@ export default function App() {
           })}
         </nav>
 
-        <div className="mt-auto space-y-3 px-1">
+        <div className="mt-auto space-y-2 px-1">
           <ImportButton />
+          <button
+            onClick={() => openHelp("import")}
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm text-slate-400 transition-colors hover:bg-ink-800 hover:text-slate-200"
+          >
+            <HelpCircle size={18} />
+            Help &amp; guides
+          </button>
           <div className="rounded-xl border border-ink-700/60 bg-ink-850/60 px-3 py-2 text-[11px] text-slate-500">
             {activities.length} activities stored locally
           </div>
@@ -130,6 +142,9 @@ export default function App() {
 
       {/* Activity detail overlay */}
       {selectedId && <ActivityDetail id={selectedId} onClose={() => select(null)} />}
+
+      {/* Help & guides */}
+      {help && <HelpModal initialTab={help} onClose={closeHelp} />}
 
       {/* Import toast */}
       {(importStatus.message || importStatus.warnings.length > 0) && <ImportToast />}

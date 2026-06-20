@@ -20,6 +20,7 @@ export function Coach() {
   const chat = useStore((s) => s.chat);
   const setChat = useStore((s) => s.setChat);
   const clearChat = useStore((s) => s.clearChat);
+  const openHelp = useStore((s) => s.openHelp);
 
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -111,6 +112,9 @@ export function Coach() {
               Add your Anthropic API key in Settings. Coach Claude then analyzes your imported data
               and answers questions about your training.
             </p>
+            <button onClick={() => openHelp("claude")} className="btn-primary mx-auto mt-4">
+              <KeyRound size={15} /> How to connect Claude
+            </button>
           </div>
         </div>
       ) : (
