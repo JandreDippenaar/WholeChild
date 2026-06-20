@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import {
   Activity as ActivityIcon,
   HelpCircle,
@@ -12,13 +12,17 @@ import {
 import { useStore } from "./lib/store";
 import { Dashboard } from "./components/Dashboard";
 import { Activities } from "./components/Activities";
-import { Coach } from "./components/Coach";
-import { Settings } from "./components/Settings";
 import { ImportButton } from "./components/ImportButton";
-import { ActivityDetail } from "./components/ActivityDetail";
-import { HelpModal } from "./components/HelpModal";
-
 import type { View } from "./lib/store";
+
+// Lazy-loaded so recharts (ActivityDetail), the chat view, and Settings don't
+// weigh down the initial dashboard load.
+const Coach = lazy(() => import("./components/Coach").then((m) => ({ default: m.Coach })));
+const Settings = lazy(() => import("./components/Settings").then((m) => ({ default: m.Settings })));
+const ActivityDetail = lazy(() =>
+  import("./components/ActivityDetail").then((m) => ({ default: m.ActivityDetail })),
+);
+const HelpModal = lazy(() => import("./components/HelpModal").then((m) => ({ default: m.HelpModal })));
 
 const NAV: { id: View; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -139,18 +143,22 @@ export default function App() {
       {/* Main */}
       <main className="relative flex-1 overflow-y-auto">
         <div className="mx-auto max-w-7xl px-6 py-6">
-          {view === "dashboard" && <Dashboard onSeeAll={() => setView("activities")} />}
-          {view === "activities" && <Activities />}
-          {view === "coach" && <Coach />}
-          {view === "settings" && <Settings />}
+          <Suspense fallback={<ViewFallback />}>
+            {view === "dashboard" && <Dashboard onSeeAll={() => setView("activities")} />}
+            {view === "activities" && <Activities />}
+            {view === "coach" && <Coach />}
+            {view === "settings" && <Settings />}
+          </Suspense>
         </div>
       </main>
 
       {/* Activity detail overlay */}
-      {selectedId && <ActivityDetail id={selectedId} onClose={() => select(null)} />}
+      <Suspense fallback={null}>
+        {selectedId && <ActivityDetail id={selectedId} onClose={() => select(null)} />}
+      </Suspense>
 
       {/* Help & guides */}
-      {help && <HelpModal initialTab={help} onClose={closeHelp} />}
+      <Suspense fallback={null}>{help && <HelpModal initialTab={help} onClose={closeHelp} />}</Suspense>
 
       {/* Import toast */}
       {(importStatus.message || importStatus.warnings.length > 0) && <ImportToast />}
@@ -167,6 +175,14 @@ export default function App() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function ViewFallback() {
+  return (
+    <div className="grid h-64 place-items-center">
+      <span className="h-6 w-6 animate-spin rounded-full border-2 border-brand-400 border-t-transparent" />
     </div>
   );
 }

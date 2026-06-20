@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronDown, Download, ExternalLink, KeyRound, X } from "lucide-react";
 import { CLAUDE_CONNECT_NOTE, CLAUDE_CONNECT_STEPS, EXPORT_GUIDES } from "./exportGuides";
 
@@ -6,6 +6,14 @@ type Tab = "import" | "claude";
 
 export function HelpModal({ onClose, initialTab = "import" }: { onClose: () => void; initialTab?: Tab }) {
   const [tab, setTab] = useState<Tab>(initialTab);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-ink-950/70 p-4 backdrop-blur-sm" onClick={onClose}>

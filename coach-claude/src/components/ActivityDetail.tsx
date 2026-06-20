@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import {
   Area,
   AreaChart,
@@ -14,6 +14,8 @@ import { Activity, Flame, Gauge, HeartPulse, Mountain, Route, Timer, Trash2, X, 
 import { useStore } from "../lib/store";
 import { RouteMap } from "./RouteMap";
 import { SportGlyph } from "./SportGlyph";
+import { ZoneBar } from "./ZoneBar";
+import { resolveMaxHr, timeInZones } from "../lib/zones";
 import type { Sample } from "../types";
 import {
   SPORT_COLOR,
@@ -94,9 +96,18 @@ function computeSplits(samples: Sample[], unitM: number): Split[] {
 export function ActivityDetail({ id, onClose }: { id: string; onClose: () => void }) {
   const activity = useStore((s) => s.activities.find((a) => a.id === id));
   const units = useStore((s) => s.settings.units);
+  const maxHrSetting = useStore((s) => s.settings.maxHr);
   const remove = useStore((s) => s.removeActivity);
 
   const a = activity;
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
 
   const { series, hasHr, hasEle, hasSpeed, xByDistance, splits } = useMemo(() => {
     if (!a)
@@ -126,6 +137,10 @@ export function ActivityDetail({ id, onClose }: { id: string; onClose: () => voi
   }, [a, units]);
 
   if (!a) return null;
+
+  const maxHr = resolveMaxHr(maxHrSetting, [a]);
+  const zoneSecs = hasHr ? timeInZones(a.samples, maxHr) : [];
+  const hasZones = zoneSecs.reduce((x, y) => x + y, 0) > 0;
 
   const color = SPORT_COLOR[a.sport];
   const dur = a.movingSec ?? a.durationSec;
@@ -241,6 +256,16 @@ export function ActivityDetail({ id, onClose }: { id: string; onClose: () => voi
               xByDistance={xByDistance}
               u={u}
             />
+          )}
+
+          {/* HR zones */}
+          {hasZones && (
+            <Panel title={`Heart-rate zones · max ${maxHr} bpm`}>
+              <ZoneBar seconds={zoneSecs} maxHr={maxHr} />
+              <p className="mt-3 text-[11px] text-slate-600">
+                Set your real max HR in Settings for accurate zones.
+              </p>
+            </Panel>
           )}
 
           {/* Splits */}

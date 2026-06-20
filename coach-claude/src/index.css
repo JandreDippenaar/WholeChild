@@ -23,12 +23,6 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-@supports (font-variation-settings: normal) {
-  body {
-    font-family: "Inter var", Inter, system-ui, sans-serif;
-  }
-}
-
 /* Thin custom scrollbars */
 * {
   scrollbar-width: thin;

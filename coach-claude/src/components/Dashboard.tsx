@@ -17,6 +17,9 @@ import { PageHeader, SectionTitle, StatCard } from "./ui";
 import { ActivityRow } from "./ActivityRow";
 import { EmptyState } from "./EmptyState";
 import { InsightsPanel } from "./InsightsPanel";
+import { Stepper } from "./Stepper";
+import { ZoneBar } from "./ZoneBar";
+import { aggregateZones, resolveMaxHr } from "../lib/zones";
 import {
   SPORT_COLOR,
   SPORT_LABEL,
@@ -33,6 +36,7 @@ import { bySport, computeTotals, personalBests, streaks, trend } from "../lib/st
 export function Dashboard({ onSeeAll }: { onSeeAll: () => void }) {
   const activities = useStore((s) => s.activities);
   const units = useStore((s) => s.settings.units);
+  const maxHrSetting = useStore((s) => s.settings.maxHr);
   const select = useStore((s) => s.select);
   const [grouping, setGrouping] = useState<"week" | "month">("week");
 
@@ -41,6 +45,9 @@ export function Dashboard({ onSeeAll }: { onSeeAll: () => void }) {
   const trendData = useMemo(() => trend(activities, grouping), [activities, grouping]);
   const pbs = useMemo(() => personalBests(activities), [activities]);
   const streak = useMemo(() => streaks(activities), [activities]);
+  const maxHr = useMemo(() => resolveMaxHr(maxHrSetting, activities), [maxHrSetting, activities]);
+  const zoneSecs = useMemo(() => aggregateZones(activities, maxHr), [activities, maxHr]);
+  const hasZones = zoneSecs.reduce((a, b) => a + b, 0) > 0;
 
   if (!activities.length) {
     return (
@@ -65,6 +72,8 @@ export function Dashboard({ onSeeAll }: { onSeeAll: () => void }) {
         title="Dashboard"
         subtitle={`${totals.count} activities · ${formatDistance(totals.distanceM, units)} all-time`}
       />
+
+      <Stepper />
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
@@ -186,6 +195,16 @@ export function Dashboard({ onSeeAll }: { onSeeAll: () => void }) {
           </div>
         </div>
       </div>
+
+      {/* Heart-rate zones (across activities with HR streams) */}
+      {hasZones && (
+        <div className="mt-5">
+          <div className="card p-4">
+            <SectionTitle>Heart-rate zones · max {maxHr} bpm</SectionTitle>
+            <ZoneBar seconds={zoneSecs} maxHr={maxHr} />
+          </div>
+        </div>
+      )}
 
       {/* Personal bests */}
       <div className="mt-5">
