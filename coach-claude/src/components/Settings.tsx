@@ -1,12 +1,13 @@
 import { useState } from "react";
-import Anthropic from "@anthropic-ai/sdk";
 import {
   AlertTriangle,
   CheckCircle2,
   Database,
+  Download,
   Eye,
   EyeOff,
   ExternalLink,
+  FileJson,
   KeyRound,
   Loader2,
   Ruler,
@@ -14,6 +15,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useStore } from "../lib/store";
+import { exportLibraryCsv, exportLibraryJson } from "../lib/exporters";
 import { PageHeader, SectionTitle } from "./ui";
 import { CLAUDE_CONNECT_NOTE, CLAUDE_CONNECT_STEPS, EXPORT_GUIDES } from "./exportGuides";
 
@@ -38,6 +40,7 @@ export function Settings() {
     setTestState("testing");
     setTestMsg("");
     try {
+      const Anthropic = (await import("@anthropic-ai/sdk")).default;
       const client = new Anthropic({ apiKey: settings.apiKey, dangerouslyAllowBrowser: true });
       await client.messages.create({
         model: settings.model,
@@ -178,15 +181,31 @@ export function Settings() {
               {activities.length} activities are stored locally in this browser (IndexedDB). Nothing is uploaded
               anywhere except the data summary you send to Claude when you ask a question.
             </p>
-            <button
-              onClick={() => {
-                if (confirm("Delete all imported activities? This cannot be undone.")) clearAll();
-              }}
-              disabled={!activities.length}
-              className="btn-ghost mt-3 text-rose-400 hover:bg-rose-500/10"
-            >
-              <Trash2 size={15} /> Delete all activities
-            </button>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                onClick={() => exportLibraryCsv(activities)}
+                disabled={!activities.length}
+                className="btn-ghost"
+              >
+                <Download size={15} /> Export CSV
+              </button>
+              <button
+                onClick={() => exportLibraryJson(activities)}
+                disabled={!activities.length}
+                className="btn-ghost"
+              >
+                <FileJson size={15} /> Export JSON
+              </button>
+              <button
+                onClick={() => {
+                  if (confirm("Delete all imported activities? This cannot be undone.")) clearAll();
+                }}
+                disabled={!activities.length}
+                className="btn-ghost text-rose-400 hover:bg-rose-500/10"
+              >
+                <Trash2 size={15} /> Delete all
+              </button>
+            </div>
           </section>
         </div>
       </div>

@@ -9,7 +9,7 @@
 // For this MVP we use an API key from console.anthropic.com; the call site is
 // isolated here so an OAuth flow can be added later without touching the UI.
 
-import Anthropic from "@anthropic-ai/sdk";
+import type AnthropicNS from "@anthropic-ai/sdk";
 import type { Activity, ChatMessage } from "../types";
 import type { UnitSystem } from "./format";
 import {
@@ -163,6 +163,8 @@ export interface StreamArgs {
 
 /** Stream a coaching reply. Returns the full assistant text. */
 export async function streamCoach(args: StreamArgs): Promise<string> {
+  // Dynamic import keeps the Anthropic SDK out of the initial bundle.
+  const Anthropic = (await import("@anthropic-ai/sdk")).default;
   const client = new Anthropic({
     apiKey: args.apiKey,
     dangerouslyAllowBrowser: true,
@@ -186,7 +188,7 @@ export async function streamCoach(args: StreamArgs): Promise<string> {
 
   const final = await stream.finalMessage();
   return final.content
-    .filter((b): b is Anthropic.TextBlock => b.type === "text")
+    .filter((b): b is AnthropicNS.TextBlock => b.type === "text")
     .map((b) => b.text)
     .join("");
 }
