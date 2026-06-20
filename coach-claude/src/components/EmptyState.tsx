@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { ChevronDown, FileDown, KeyRound, Watch } from "lucide-react";
+import { ChevronDown, FileDown, FlaskConical, KeyRound, Watch } from "lucide-react";
 import { ImportButton } from "./ImportButton";
 import { EXPORT_GUIDES } from "./exportGuides";
 import { useStore } from "../lib/store";
 
 export function EmptyState() {
   const openHelp = useStore((s) => s.openHelp);
+  const loadDemo = useStore((s) => s.loadDemo);
   return (
     <div className="mx-auto max-w-3xl">
       <div className="card flex flex-col items-center gap-4 p-10 text-center">
@@ -28,6 +29,14 @@ export function EmptyState() {
             <KeyRound size={15} /> Connect Claude
           </button>
         </div>
+        <div className="flex items-center gap-2 text-xs text-slate-500">
+          <span className="h-px w-8 bg-ink-700" />
+          just exploring?
+          <span className="h-px w-8 bg-ink-700" />
+        </div>
+        <button onClick={loadDemo} className="btn-subtle -mt-1 text-brand-400 hover:bg-brand-500/10">
+          <FlaskConical size={15} /> Load demo data
+        </button>
       </div>
 
       <div className="mt-6">
