@@ -6,6 +6,7 @@ import { get as idbGet, set as idbSet, del as idbDel } from "idb-keyval";
 import type { Activity, ChatMessage, FilterState } from "../types";
 import type { UnitSystem } from "./format";
 import { parseFiles } from "./parsers";
+import { INSIGHTS_PROMPT, buildSystemPrompt, streamCoach } from "./claude";
 
 const ACTIVITIES_KEY = "coach-claude:activities";
 const CHAT_KEY = "coach-claude:chat";
@@ -51,6 +52,7 @@ interface ImportStatus {
 }
 
 export type HelpTab = "import" | "claude";
+export type View = "dashboard" | "activities" | "coach" | "settings";
 
 interface AppState {
   loaded: boolean;
@@ -59,11 +61,19 @@ interface AppState {
   selectedId: string | null;
   settings: Settings;
   chat: ChatMessage[];
+  chatBusy: boolean;
+  /** Guard so the auto-insight only ever fires once per loaded library. */
+  insightsRequested: boolean;
   importStatus: ImportStatus;
   help: HelpTab | null;
+  view: View;
 
+  setView: (view: View) => void;
   openHelp: (tab: HelpTab) => void;
   closeHelp: () => void;
+  runCoach: (text: string) => Promise<void>;
+  stopCoach: () => void;
+  maybeGenerateInsights: () => void;
   init: () => Promise<void>;
   importFiles: (files: File[]) => Promise<void>;
   removeActivity: (id: string) => void;
@@ -84,6 +94,9 @@ async function persistChat(chat: ChatMessage[]) {
   await idbSet(CHAT_KEY, chat);
 }
 
+// Abort controller for the in-flight coaching stream (module-scoped).
+let coachAbort: AbortController | null = null;
+
 export const useStore = create<AppState>((set, get) => ({
   loaded: false,
   activities: [],
@@ -91,9 +104,13 @@ export const useStore = create<AppState>((set, get) => ({
   selectedId: null,
   settings: loadSettings(),
   chat: [],
+  chatBusy: false,
+  insightsRequested: false,
   importStatus: { busy: false, message: "", warnings: [] },
   help: null,
+  view: "dashboard",
 
+  setView: (view) => set({ view }),
   openHelp: (tab) => set({ help: tab }),
   closeHelp: () => set({ help: null }),
 
@@ -105,8 +122,68 @@ export const useStore = create<AppState>((set, get) => ({
     set({
       activities: activities ?? [],
       chat: chat ?? [],
+      // If a conversation already exists, insights were already generated.
+      insightsRequested: (chat?.length ?? 0) > 0,
       loaded: true,
     });
+  },
+
+  runCoach: async (text) => {
+    const content = text.trim();
+    const { settings, activities, chat, chatBusy } = get();
+    if (!content || chatBusy || !settings.apiKey.trim()) return;
+
+    const history: ChatMessage[] = [...chat, { role: "user", content }];
+    // Set busy + placeholder synchronously so concurrent triggers bail out.
+    set({ chatBusy: true, chat: [...history, { role: "assistant", content: "", streaming: true }] });
+
+    const controller = new AbortController();
+    coachAbort = controller;
+    const system = buildSystemPrompt(activities, settings.units);
+
+    let acc = "";
+    try {
+      await streamCoach({
+        apiKey: settings.apiKey,
+        model: settings.model,
+        system,
+        history,
+        signal: controller.signal,
+        onDelta: (delta) => {
+          acc += delta;
+          set({ chat: [...history, { role: "assistant", content: acc, streaming: true }] });
+        },
+      });
+      const finalChat: ChatMessage[] = [...history, { role: "assistant", content: acc, streaming: false }];
+      void persistChat(finalChat);
+      set({ chat: finalChat });
+    } catch (err) {
+      const aborted = controller.signal.aborted;
+      const msg = aborted
+        ? acc + (acc ? "\n\n_(stopped)_" : "_(stopped)_")
+        : `⚠ ${(err as Error).message || "Request failed."} Check your API key and model in Settings.`;
+      const finalChat: ChatMessage[] = [
+        ...history,
+        { role: "assistant", content: msg, streaming: false, error: !aborted },
+      ];
+      void persistChat(finalChat);
+      set({ chat: finalChat });
+    } finally {
+      coachAbort = null;
+      set({ chatBusy: false });
+    }
+  },
+
+  stopCoach: () => coachAbort?.abort(),
+
+  // The "dormant" auto-insight: fires once when data + a connected key exist
+  // and no conversation has started yet.
+  maybeGenerateInsights: () => {
+    const { activities, settings, chat, chatBusy, insightsRequested } = get();
+    if (insightsRequested || chatBusy || chat.length > 0) return;
+    if (!activities.length || !settings.apiKey.trim()) return;
+    set({ insightsRequested: true });
+    void get().runCoach(INSIGHTS_PROMPT);
   },
 
   importFiles: async (files) => {
@@ -187,7 +264,7 @@ export const useStore = create<AppState>((set, get) => ({
   },
   clearChat: () => {
     void idbDel(CHAT_KEY);
-    set({ chat: [] });
+    set({ chat: [], insightsRequested: false });
   },
 
   dismissWarnings: () =>

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Activity as ActivityIcon,
   HelpCircle,
@@ -18,7 +18,7 @@ import { ImportButton } from "./components/ImportButton";
 import { ActivityDetail } from "./components/ActivityDetail";
 import { HelpModal } from "./components/HelpModal";
 
-type View = "dashboard" | "activities" | "coach" | "settings";
+import type { View } from "./lib/store";
 
 const NAV: { id: View; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -28,11 +28,13 @@ const NAV: { id: View; label: string; icon: typeof LayoutDashboard }[] = [
 ];
 
 export default function App() {
-  const [view, setView] = useState<View>("dashboard");
-  const [dragging, setDragging] = useState(false);
   const dragDepth = useRef(0);
+  const [dragging, setDragging] = useState(false);
 
+  const view = useStore((s) => s.view);
+  const setView = useStore((s) => s.setView);
   const activities = useStore((s) => s.activities);
+  const apiKey = useStore((s) => s.settings.apiKey);
   const importStatus = useStore((s) => s.importStatus);
   const importFiles = useStore((s) => s.importFiles);
   const selectedId = useStore((s) => s.selectedId);
@@ -40,6 +42,12 @@ export default function App() {
   const help = useStore((s) => s.help);
   const openHelp = useStore((s) => s.openHelp);
   const closeHelp = useStore((s) => s.closeHelp);
+  const maybeGenerateInsights = useStore((s) => s.maybeGenerateInsights);
+
+  // Fire the dormant insight whenever data + a connected key become available.
+  useEffect(() => {
+    maybeGenerateInsights();
+  }, [activities.length, apiKey, maybeGenerateInsights]);
 
   // Global drag & drop for importing anywhere in the app.
   useEffect(() => {
@@ -74,8 +82,6 @@ export default function App() {
       window.removeEventListener("drop", onDrop);
     };
   }, [importFiles]);
-
-  const goActivities = useCallback(() => setView("activities"), []);
 
   return (
     <div className="flex h-screen overflow-hidden text-slate-100">
@@ -133,7 +139,7 @@ export default function App() {
       {/* Main */}
       <main className="relative flex-1 overflow-y-auto">
         <div className="mx-auto max-w-7xl px-6 py-6">
-          {view === "dashboard" && <Dashboard onSeeAll={goActivities} />}
+          {view === "dashboard" && <Dashboard onSeeAll={() => setView("activities")} />}
           {view === "activities" && <Activities />}
           {view === "coach" && <Coach />}
           {view === "settings" && <Settings />}

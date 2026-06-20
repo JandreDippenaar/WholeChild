@@ -1,15 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowUp, KeyRound, MessageSquareHeart, Sparkles, Square, Trash2 } from "lucide-react";
 import { useStore } from "../lib/store";
 import { PageHeader } from "./ui";
 import { Markdown } from "./Markdown";
-import { buildSystemPrompt, streamCoach } from "../lib/claude";
 import type { ChatMessage } from "../types";
 
 const SUGGESTIONS = [
   "How's my training trending over the last month?",
   "Am I increasing my weekly volume too fast?",
-  "Summarize my running fitness and suggest one thing to improve.",
   "What was my best week and why?",
   "Build me a simple 4-week plan based on my current volume.",
 ];
@@ -18,19 +16,14 @@ export function Coach() {
   const activities = useStore((s) => s.activities);
   const settings = useStore((s) => s.settings);
   const chat = useStore((s) => s.chat);
-  const setChat = useStore((s) => s.setChat);
+  const chatBusy = useStore((s) => s.chatBusy);
+  const runCoach = useStore((s) => s.runCoach);
+  const stopCoach = useStore((s) => s.stopCoach);
   const clearChat = useStore((s) => s.clearChat);
   const openHelp = useStore((s) => s.openHelp);
 
   const [input, setInput] = useState("");
-  const [busy, setBusy] = useState(false);
-  const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-
-  const system = useMemo(
-    () => buildSystemPrompt(activities, settings.units),
-    [activities, settings.units],
-  );
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -38,50 +31,12 @@ export function Coach() {
 
   const hasKey = settings.apiKey.trim().length > 0;
 
-  const send = async (text: string) => {
+  const send = (text: string) => {
     const content = text.trim();
-    if (!content || busy || !hasKey) return;
+    if (!content || chatBusy || !hasKey) return;
     setInput("");
-
-    const history: ChatMessage[] = [...chat, { role: "user", content }];
-    const withPlaceholder: ChatMessage[] = [...history, { role: "assistant", content: "", streaming: true }];
-    setChat(withPlaceholder);
-    setBusy(true);
-
-    const controller = new AbortController();
-    abortRef.current = controller;
-
-    let acc = "";
-    try {
-      await streamCoach({
-        apiKey: settings.apiKey,
-        model: settings.model,
-        system,
-        history,
-        signal: controller.signal,
-        onDelta: (delta) => {
-          acc += delta;
-          // Update the streaming assistant message in place.
-          useStore.getState().setChat([...history, { role: "assistant", content: acc, streaming: true }]);
-        },
-      });
-      useStore.getState().setChat([...history, { role: "assistant", content: acc, streaming: false }]);
-    } catch (err) {
-      const aborted = controller.signal.aborted;
-      const msg = aborted
-        ? acc + (acc ? "\n\n_(stopped)_" : "_(stopped)_")
-        : `⚠ ${(err as Error).message || "Request failed."} Check your API key and model in Settings.`;
-      useStore.getState().setChat([
-        ...history,
-        { role: "assistant", content: msg, streaming: false, error: !aborted },
-      ]);
-    } finally {
-      setBusy(false);
-      abortRef.current = null;
-    }
+    void runCoach(content);
   };
-
-  const stop = () => abortRef.current?.abort();
 
   return (
     <div className="flex h-[calc(100vh-3rem)] flex-col">
@@ -109,8 +64,8 @@ export function Coach() {
             </div>
             <h3 className="text-lg font-semibold">Connect Claude to start coaching</h3>
             <p className="mt-1.5 text-sm text-slate-400">
-              Add your Anthropic API key in Settings. Coach Claude then analyzes your imported data
-              and answers questions about your training.
+              Add your Anthropic API key (in Settings or on the Dashboard insights card). Coach Claude then
+              analyzes your imported data and answers questions about your training.
             </p>
             <button onClick={() => openHelp("claude")} className="btn-primary mx-auto mt-4">
               <KeyRound size={15} /> How to connect Claude
@@ -140,7 +95,7 @@ export function Coach() {
                 <button
                   key={s}
                   onClick={() => send(s)}
-                  disabled={!activities.length}
+                  disabled={!activities.length || chatBusy}
                   className="chip border-ink-700 text-slate-300 hover:border-brand-500/50 hover:text-brand-300 disabled:opacity-40"
                 >
                   <Sparkles size={12} className="text-brand-400" />
@@ -159,20 +114,20 @@ export function Coach() {
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
-                    void send(input);
+                    send(input);
                   }
                 }}
                 rows={1}
                 placeholder={activities.length ? "Ask about your training…" : "Import activities to get grounded answers…"}
                 className="max-h-40 flex-1 resize-none bg-transparent px-2 py-2 text-sm text-slate-100 outline-none placeholder:text-slate-500"
               />
-              {busy ? (
-                <button onClick={stop} className="btn-ghost h-10 w-10 !px-0" title="Stop">
+              {chatBusy ? (
+                <button onClick={stopCoach} className="btn-ghost h-10 w-10 !px-0" title="Stop">
                   <Square size={16} className="fill-current" />
                 </button>
               ) : (
                 <button
-                  onClick={() => void send(input)}
+                  onClick={() => send(input)}
                   disabled={!input.trim()}
                   className="btn-primary h-10 w-10 !px-0"
                   title="Send"
