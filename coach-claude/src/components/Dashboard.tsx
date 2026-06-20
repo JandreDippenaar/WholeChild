@@ -16,6 +16,7 @@ import { useStore } from "../lib/store";
 import { PageHeader, SectionTitle, StatCard } from "./ui";
 import { ActivityRow } from "./ActivityRow";
 import { EmptyState } from "./EmptyState";
+import { InsightsPanel } from "./InsightsPanel";
 import {
   SPORT_COLOR,
   SPORT_LABEL,
@@ -99,6 +100,11 @@ export function Dashboard({ onSeeAll }: { onSeeAll: () => void }) {
           icon={<CalendarDays size={15} />}
           accent="#a3e635"
         />
+      </div>
+
+      {/* AI insights — invites connection, then auto-analyzes the data */}
+      <div className="mt-5">
+        <InsightsPanel />
       </div>
 
       {/* Charts */}

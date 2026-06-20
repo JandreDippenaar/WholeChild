@@ -142,6 +142,16 @@ export function buildSystemPrompt(activities: Activity[], units: UnitSystem): st
   return SYSTEM_PROMPT + buildContext(activities, units);
 }
 
+/**
+ * The "dormant" prompt fired automatically the first time a user connects
+ * Claude with data loaded. Reads cleanly as the opening user message and
+ * primes the conversation for follow-up questions.
+ */
+export const INSIGHTS_PROMPT =
+  "Give me a personalized read on my training so far. Cover: (1) a one-line overall summary, " +
+  "(2) the most notable trends in my volume, pace/speed and heart rate, (3) how consistent I've been, " +
+  "and (4) two or three specific, actionable suggestions. Keep it skimmable with short bullets.";
+
 export interface StreamArgs {
   apiKey: string;
   model: string;
