@@ -36,6 +36,13 @@ jobs:
       - name: Add SPA fallback
         run: cp dist/index.html dist/404.html
 
+      - name: Build Coach Claude (served at /WholeChild/coach/)
+        run: |
+          npm --prefix coach-claude ci
+          VITE_BASE=/WholeChild/coach/ npm --prefix coach-claude run build
+          mkdir -p dist/coach
+          cp -r coach-claude/dist/* dist/coach/
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
